@@ -6,7 +6,6 @@ import {
   ScrollRestoration,
 } from "@remix-run/react"
 import "./tailwind.css"
-;("use client")
 
 import {
   isServer,
@@ -19,20 +18,22 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000,
+        staleTime: 20 * 1000,
       },
     },
   })
 }
 
-let browserQueryClient: QueryClient | undefined = undefined
+if (!isServer) {
+  Object.assign(window, { queryClient: undefined })
+}
 
-function getQueryClient() {
+export function getQueryClient(): QueryClient {
   if (isServer) {
     return makeQueryClient()
   } else {
-    if (!browserQueryClient) browserQueryClient = makeQueryClient()
-    return browserQueryClient
+    if (!window.queryClient) window.queryClient = makeQueryClient()
+    return window.queryClient
   }
 }
 

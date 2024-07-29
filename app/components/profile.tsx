@@ -2,7 +2,7 @@ import { useParams } from "@remix-run/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { queryOptionsProfile } from "~/components/query-options-profile"
 
-export function Profile() {
+export function ProfileInfo() {
   const params = useParams()
   const { data: profile } = useSuspenseQuery(
     queryOptionsProfile(params.username!).options
