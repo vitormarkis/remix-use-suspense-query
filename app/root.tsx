@@ -13,6 +13,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { useEffect } from "react"
 
 function makeQueryClient() {
   return new QueryClient({
@@ -28,9 +29,10 @@ if (!isServer) {
   Object.assign(window, { queryClient: undefined })
 }
 
+const serverClient = makeQueryClient()
 export function getQueryClient(): QueryClient {
   if (isServer) {
-    return makeQueryClient()
+    return serverClient
   } else {
     if (!window.queryClient) window.queryClient = makeQueryClient()
     return window.queryClient
@@ -39,6 +41,13 @@ export function getQueryClient(): QueryClient {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient()
+
+  useEffect(() => {
+    setTimeout(() => {
+      console.log("Finished hydration")
+      window.isHydrating = false
+    }, 500)
+  }, [])
 
   return (
     <html lang="en">

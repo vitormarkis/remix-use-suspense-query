@@ -4,6 +4,7 @@ declare global {
   interface Window {
     queriesLoading: Set<string>
     queryClient: QueryClient
+    isHydrating: boolean
   }
 }
 

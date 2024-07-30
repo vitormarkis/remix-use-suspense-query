@@ -1,0 +1,7 @@
+# TODO
+
+X return shallow promise on SSR HTML
+. client loader factory
+. defer query no loader
+. abstract query fn to receive just fetch
+. stale while revalidate a cada navegação

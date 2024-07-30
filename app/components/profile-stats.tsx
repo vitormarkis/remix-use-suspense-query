@@ -7,7 +7,7 @@ type ProfileStatsProps = {}
 export function ProfileStats({}: ProfileStatsProps) {
   const params = useParams()
   const { data: profile } = useSuspenseQuery(
-    queryOptionsProfile(params.username!).options
+    queryOptionsProfile({ username: params.username! })
   )
 
   return (

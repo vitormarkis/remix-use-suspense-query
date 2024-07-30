@@ -1,31 +1,32 @@
 import { LoaderFunctionArgs } from "@remix-run/node"
 import { ClientLoaderFunctionArgs, defer, useParams } from "@remix-run/react"
-import { isServer } from "@tanstack/react-query"
+import { hashKey } from "@tanstack/react-query"
 import { Suspense } from "react"
-import { ProfileInfo } from "~/components/profile"
+import { ProfileInfo } from "~/components/profile-info"
 import { ProfileStats } from "~/components/profile-stats"
 import { queryOptionsProfile } from "~/components/query-options-profile"
 import { Skeleton } from "~/components/skeleton"
+import { getQueryClient } from "~/root"
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  const profile = queryOptionsProfile(params.username!)
+  const options = queryOptionsProfile({ username: params.username! })
+  const profile = getQueryClient().fetchQuery(options)
 
   return defer({
-    // @ts-expect-error
-    [profile.promiseKey]: profile.options.queryFn?.(),
+    [hashKey(options.queryKey)]: new Promise(res => profile.then(res)),
   })
 }
 
-if (!isServer) {
-  window.queriesLoading ??= new Set()
-}
 export async function clientLoader({ serverLoader }: ClientLoaderFunctionArgs) {
   const serverData = await serverLoader<typeof loader>()
   for (const [promiseKey, promise] of Object.entries(serverData)) {
-    window.queriesLoading.add(promiseKey)
-    promise.finally(() => {
-      window.queriesLoading.delete(promiseKey)
-    })
+    if (promise instanceof Promise) {
+      window.queriesLoading.add(promiseKey)
+      promise.then(data => console.log(promiseKey, data))
+      promise.finally(() => {
+        window.queriesLoading.delete(promiseKey)
+      })
+    }
   }
 
   return serverData
