@@ -1,37 +1,60 @@
 import { LoaderFunctionArgs } from "@remix-run/node"
-import { ClientLoaderFunctionArgs, defer, useParams } from "@remix-run/react"
+import {
+  ClientActionFunction,
+  ClientActionFunctionArgs,
+  ClientLoaderFunction,
+  ClientLoaderFunctionArgs,
+  defer,
+  useParams,
+} from "@remix-run/react"
 import { hashKey } from "@tanstack/react-query"
 import { Suspense } from "react"
 import { ProfileInfo } from "~/components/profile-info"
 import { ProfileStats } from "~/components/profile-stats"
-import { queryOptionsProfile } from "~/components/query-options-profile"
+import { queryOptionsFetchProfile } from "~/components/query-options-profile"
 import { Skeleton } from "~/components/skeleton"
 import { getQueryClient } from "~/root"
+import { bad, LoaderDataPromiseRecord, nice } from "~/utils"
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  const options = queryOptionsProfile({ username: params.username! })
-  const profile = getQueryClient().fetchQuery(options)
+  const optionsFetchProfile = queryOptionsFetchProfile({
+    username: params.username!,
+  })
 
   return defer({
-    [hashKey(options.queryKey)]: new Promise(res => profile.then(res)),
+    [hashKey(optionsFetchProfile.queryKey)]:
+      getQueryClient().fetchQuery(optionsFetchProfile),
   })
 }
 
-export async function clientLoader({ serverLoader }: ClientLoaderFunctionArgs) {
-  const serverData = await serverLoader<typeof loader>()
-  for (const [promiseKey, promise] of Object.entries(serverData)) {
-    if (promise instanceof Promise) {
-      window.queriesLoading.add(promiseKey)
-      promise.then(data => console.log(promiseKey, data))
-      promise.finally(() => {
-        window.queriesLoading.delete(promiseKey)
-      })
-    }
-  }
+export const clientLoader = factoryClientLoader(({ params, serverLoader }) => {
+  return serverLoader()
+})
 
-  return serverData
+export function factoryClientLoader(clientLoader?: ClientLoaderFunction) {
+  return async (args: ClientLoaderFunctionArgs) => {
+    const clientLoaderData = clientLoader
+      ? await clientLoader(args)
+      : args.serverLoader()
+
+    const [noPrefetchesShape, prefetchs] = ensurePrefetches(clientLoaderData)
+    if (noPrefetchesShape) return clientLoaderData
+
+    for (const [promiseKey, promise] of Object.entries(prefetchs)) {
+      if (promise instanceof Promise) {
+        console.log("Adding promise ", promiseKey)
+        window.queriesLoading.add(promiseKey)
+        promise.finally(() => {
+          window.queriesLoading.delete(promiseKey)
+        })
+      }
+    }
+
+    return clientLoaderData
+  }
 }
 
+// @ts-ignore
 clientLoader.hydrate = true
 
 export default function Home() {
@@ -48,4 +71,11 @@ export default function Home() {
       </Suspense>
     </div>
   )
+}
+
+export function ensurePrefetches(loaderData: unknown) {
+  if (!loaderData) return bad()
+  if (typeof loaderData !== "object") return bad()
+  if (loaderData) return nice(loaderData as LoaderDataPromiseRecord)
+  return bad()
 }

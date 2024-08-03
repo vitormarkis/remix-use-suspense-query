@@ -19,7 +19,7 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 20 * 1000,
+        staleTime: 10 * 1000,
       },
     },
   })
@@ -31,12 +31,14 @@ if (!isServer) {
 
 const serverClient = makeQueryClient()
 export function getQueryClient(): QueryClient {
-  if (isServer) {
-    return serverClient
-  } else {
-    if (!window.queryClient) window.queryClient = makeQueryClient()
-    return window.queryClient
-  }
+  if (isServer) return serverClient
+  if (!window.queryClient) window.queryClient = makeQueryClient()
+  return window.queryClient
+}
+
+export async function clientLoader() {
+  getQueryClient().removeQueries({ type: "all" })
+  return null
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -46,7 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       console.log("Finished hydration")
       window.isHydrating = false
-    }, 500)
+    }, 2000)
   }, [])
 
   return (
