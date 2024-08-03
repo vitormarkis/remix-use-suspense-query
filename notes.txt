@@ -4,7 +4,7 @@ X return shallow promise on SSR HTML
 X create templates base
 . client loader nao pode usar queryOptions porque queryOptions usa hook useLoaderData, e clientLoader roda fora do ciclo de vida do React
   - passar uma flag opcional para queryOptions no clientLoader?
-. client loader factory
+X client loader factory
 . defer query no loader
 . stale while revalidate a cada navegação
   - toda query que vier de loader, salva numa variavel global e a cada navegação do client loader ele limpa todas elas do queryClient, forçando os componentes a trigarem o queryFn no render
